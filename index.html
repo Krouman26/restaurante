@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mesa — Pedidos do Restaurante</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #252c38;
+        background: #f6f3ec;
+        --paper: #f6f3ec;
+        --surface: #fffefa;
+        --ink: #252c38;
+        --muted: #777b80;
+        --line: #e6e0d6;
+        --accent: #d96645;
+        --green: #477b63;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; }
+      button, input { font: inherit; }
+      button { cursor: pointer; }
+      .topbar {
+        min-height: 68px;
+        padding: 12px max(20px, calc((100% - 1120px) / 2));
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+      }
+      .brand { color: var(--ink); font-size: 22px; font-weight: 800; }
+      .brand span { color: var(--accent); }
+      .brand small { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; }
+      .view-button, .table-chip, .category-button, .action-button, .qty-button {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--ink);
+      }
+      .view-button { padding: 10px 13px; font-size: 13px; font-weight: 700; }
+      .view-button:hover, .table-chip:hover, .category-button:hover { border-color: var(--accent); }
+      main { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 28px; }
+      .eyebrow { margin: 0 0 10px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+      h1 { margin: 0; font-size: clamp(30px, 5vw, 44px); line-height: 1.05; letter-spacing: -.04em; }
+      h1 em { color: var(--accent); font-style: normal; }
+      h2, h3, p { margin-top: 0; }
+      .intro { margin: 9px 0 26px; color: var(--muted); font-size: 14px; }
+      .waiter-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, .8fr); gap: 30px; align-items: start; }
+      .section { padding: 20px 0; border-top: 1px solid var(--line); }
+      .section-heading { display: flex; align-items: start; gap: 12px; }
+      .step { width: 27px; height: 27px; flex: 0 0 27px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--accent); font-size: 10px; font-weight: 700; }
+      .section-heading h2 { margin: 2px 0 4px; font-size: 17px; }
+      .section-heading p { margin: 0; color: var(--muted); font-size: 12px; }
+      .table-list, .category-list { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0 0 39px; }
+      .table-chip, .category-button { min-height: 36px; padding: 0 11px; font-size: 12px; }
+      .table-chip.active, .category-button.active { background: var(--ink); border-color: var(--ink); color: white; }
+      .custom-table { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); background: var(--surface); font-size: 11px; }
+      .custom-table input { width: 60px; border: 0; outline: 0; background: transparent; color: var(--ink); }
+      .category-list { flex-wrap: nowrap; overflow-x: auto; border-bottom: 1px solid var(--line); }
+      .category-button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; white-space: nowrap; }
+      .category-button.active { color: var(--ink); background: transparent; border-bottom-color: var(--accent); }
+      .menu-list { margin: 0 0 0 39px; }
+      .menu-item { width: 100%; padding: 12px 4px; display: flex; align-items: center; gap: 11px; border: 0; border-bottom: 1px solid var(--line); text-align: left; background: transparent; color: var(--ink); }
+      .menu-item:hover { background: rgba(255,255,255,.55); }
+      .menu-copy { flex: 1; display: grid; gap: 4px; }
+      .menu-copy strong { font-size: 13px; }
+      .menu-copy small { color: var(--muted); font-size: 11px; }
+      .price { white-space: nowrap; font-size: 12px; font-weight: 700; }
+      .plus { color: var(--accent); font-size: 21px; }
+      .cart, .order-card, .stat { padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+      .cart { position: sticky; top: 14px; }
+      .cart-header, .subtotal, .order-header, .order-footer, .kitchen-title, .stats { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+      .cart-header { padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+      .cart-header h2 { margin: 0; font-size: 19px; }
+      .cart-count { color: var(--accent); font-weight: 700; }
+      .cart-empty, .empty-kitchen { padding: 28px 12px; text-align: center; color: var(--muted); font-size: 13px; }
+      .cart-empty strong { display: block; margin-bottom: 6px; color: var(--ink); }
+      .cart-line { padding: 13px 0; border-bottom: 1px solid var(--line); }
+      .cart-line-top { display: flex; justify-content: space-between; gap: 10px; }
+      .cart-line-top strong { font-size: 12px; }
+      .remove-button { padding: 0; border: 0; background: transparent; color: var(--muted); }
+      .line-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+      .qty { display: flex; align-items: center; gap: 8px; }
+      .qty-button { width: 27px; height: 27px; }
+      .line-note { min-width: 0; width: 65%; padding: 7px; border: 1px solid var(--line); border-radius: 4px; background: #fcfaf6; font-size: 11px; }
+      .subtotal { padding: 14px 0; color: var(--muted); font-size: 13px; }
+      .subtotal strong { color: var(--ink); font-size: 16px; }
+      .action-button { width: 100%; min-height: 44px; padding: 10px 14px; border: 0; color: white; background: var(--accent); font-weight: 700; }
+      .action-button:disabled { cursor: not-allowed; opacity: .55; }
+      .message { min-height: 18px; margin: 10px 0 0; color: var(--green); font-size: 12px; }
+      .help { margin-top: 20px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+      .stats { margin: 22px 0; }
+      .stat { flex: 1; }
+      .stat span { display: block; color: var(--muted); font-size: 11px; }
+      .stat strong { display: block; margin-top: 6px; font-size: 27px; }
+      .kitchen-title { margin: 25px 0 12px; }
+      .kitchen-title h2 { margin: 0; font-size: 20px; }
+      .orders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .order-card { border-top: 3px solid var(--accent); }
+      .order-card.preparing { border-top-color: #b99a4c; }
+      .order-card.ready { border-top-color: var(--green); }
+      .table-name { font-size: 21px; font-weight: 800; }
+      .status { padding: 6px 8px; border-radius: 4px; color: #9e5c37; background: #f7eae0; font-size: 11px; font-weight: 700; }
+      .status.preparing { color: #856b28; background: #f4efd9; }
+      .status.ready { color: #3e795c; background: #e4f0e8; }
+      .order-time { color: var(--muted); font-size: 11px; }
+      .order-lines { margin: 14px 0; padding: 0; list-style: none; }
+      .order-lines li { padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+      .order-lines small { display: block; margin: 4px 0 0 25px; color: #a45e38; font-style: italic; }
+      .order-footer { padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+      .order-footer .action-button { width: auto; min-height: 35px; font-size: 11px; }
+      @media (max-width: 760px) {
+        .waiter-grid { grid-template-columns: 1fr; gap: 16px; }
+        .cart { position: static; }
+        .orders { grid-template-columns: 1fr; }
+        .stats { gap: 7px; }
+        .stat { padding: 12px; }
+        .stat strong { font-size: 23px; }
+      }
+      @media (max-width: 440px) {
+        .topbar { padding: 11px 15px; }
+        main { width: calc(100% - 28px); padding-top: 24px; }
+        .table-list, .category-list, .menu-list { margin-left: 0; }
+        .menu-item { gap: 7px; }
+        .menu-copy strong { font-size: 12px; }
+        .menu-copy small { font-size: 10px; }
+        .stats { align-items: stretch; }
+        .stat { min-width: 0; }
+        .stat span { font-size: 10px; }
+        .order-header { flex-wrap: wrap; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">mesa<span>.</span><small>serviço & cozinha</small></div>
+      <button id="view-toggle" class="view-button" type="button">Tela da cozinha</button>
+    </header>
+    <main id="app" aria-live="polite"></main>
+
+    <script>
+      // Cardápio de exemplo. Edite os itens abaixo para adaptar ao restaurante.
+      const MENU = [
+        { id: "pao", name: "Pão de fermentação natural", description: "Manteiga de ervas da casa", price: 18, category: "Entradas" },
+        { id: "croquete", name: "Croquete de costela", description: "Aioli de limão · 4 unidades", price: 32, category: "Entradas" },
+        { id: "risoto", name: "Risoto de cogumelos", description: "Arroz arbóreo · parmesão curado", price: 68, category: "Pratos principais" },
+        { id: "peixe", name: "Peixe do dia", description: "Purê de mandioquinha · verdes", price: 82, category: "Pratos principais" },
+        { id: "agua", name: "Água com gás", description: "350 ml", price: 9, category: "Bebidas" },
+        { id: "limonada", name: "Limonada da casa", description: "Siciliano · hortelã", price: 16, category: "Bebidas" },
+        { id: "torta", name: "Torta morna de chocolate", description: "Creme inglês · flor de sal", price: 29, category: "Sobremesas" },
+        { id: "pudim", name: "Pudim de leite", description: "Calda de caramelo escuro", price: 24, category: "Sobremesas" }
+      ];
+      const CATEGORIES = ["Entradas", "Pratos principais", "Bebidas", "Sobremesas"];
+      const STORAGE_KEY = "mesa-pedidos-standalone-v1";
+      const app = document.querySelector("#app");
+      const viewToggle = document.querySelector("#view-toggle");
+      const draft = { table: "", category: CATEGORIES[0], lines: [], message: "" };
+      let orders = readOrders();
+
+      function readOrders() {
+        try {
+          const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+          return Array.isArray(value) ? value : [];
+        } catch {
+          return [];
+        }
+      }
+
+      // A aba que grava atualiza a própria tela; "storage" atualiza as outras abas.
+      function saveOrders(nextOrders) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextOrders));
+        orders = nextOrders;
+        window.dispatchEvent(new Event("mesa-orders-updated"));
+        render();
+      }
+
+      window.addEventListener("storage", (event) => {
+        if (event.key === STORAGE_KEY || event.key === null) {
+          orders = readOrders();
+          render();
+        }
+      });
+      window.addEventListener("mesa-orders-updated", () => {
+        orders = readOrders();
+        render();
+      });
+
+      const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[char]);
+      const formatMoney = (value) => new Intl.NumberFormat("pt-BR", {
+        style: "currency", currency: "BRL"
+      }).format(value);
+      const formatTime = (value) => new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit", minute: "2-digit"
+      }).format(new Date(value));
+      const currentView = () => location.hash === "#cozinha" ? "cozinha" : "garcom";
+
+      function renderWaiter() {
+        const selectedProducts = MENU.filter((item) => item.category === draft.category);
+        const totalQuantity = draft.lines.reduce((sum, line) => sum + line.quantity, 0);
+        const totalPrice = draft.lines.reduce((sum, line) => {
+          const product = MENU.find((item) => item.id === line.itemId);
+          return sum + (product ? product.price * line.quantity : 0);
+        }, 0);
+
+        app.innerHTML = `
+          <p class="eyebrow">Atendimento · novo pedido</p>
+          <h1>Vamos servir <em>mais uma mesa.</em></h1>
+          <p class="intro">Monte o pedido e envie direto para a cozinha.</p>
+          <div class="waiter-grid">
+            <section>
+              <div class="section">
+                <div class="section-heading"><span class="step">01</span><div><h2>Identifique a mesa</h2><p>Selecione uma mesa ou digite o número.</p></div></div>
+                <div class="table-list">
+                  ${["01", "02", "03", "04", "05", "06"].map((number) => `
+                    <button type="button" class="table-chip ${draft.table === number ? "active" : ""}" data-table="${number}">Mesa ${number}</button>
+                  `).join("")}
+                  <label class="custom-table">Outra <input id="table-input" inputmode="numeric" placeholder="Nº" value="${escapeHtml(draft.table && !["01","02","03","04","05","06"].includes(draft.table) ? draft.table : "")}" aria-label="Número de outra mesa"></label>
+                </div>
+              </div>
+              <div class="section">
+                <div class="section-heading"><span class="step">02</span><div><h2>Escolha os itens</h2><p>Toque em um item para adicionar.</p></div></div>
+                <div class="category-list" role="tablist">
+                  ${CATEGORIES.map((category) => `<button type="button" role="tab" aria-selected="${draft.category === category}" class="category-button ${draft.category === category ? "active" : ""}" data-category="${escapeHtml(category)}">${escapeHtml(category)}</button>`).join("")}
+                </div>
+                <div class="menu-list">
+                  ${selectedProducts.map((item) => `
+                    <button type="button" class="menu-item" data-add="${item.id}">
+                      <span class="menu-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.description)}</small></span>
+                      <span class="price">${formatMoney(item.price)}</span><span class="plus" aria-hidden="true">+</span>
+                    </button>
+                  `).join("")}
+                </div>
+              </div>
+            </section>
+            <aside class="cart">
+              <div class="cart-header"><div><p class="eyebrow">Resumo do pedido</p><h2>Sua comanda</h2></div><span class="cart-count">${String(totalQuantity).padStart(2, "0")}</span></div>
+              ${draft.lines.length ? `<div>${draft.lines.map((line) => `
+                <div class="cart-line">
+                  <div class="cart-line-top"><strong>${escapeHtml(line.name)}</strong><button class="remove-button" type="button" data-remove="${line.id}" aria-label="Remover ${escapeHtml(line.name)}">Remover</button></div>
+                  <div class="line-controls">
+                    <div class="qty"><button class="qty-button" type="button" data-decrease="${line.id}" aria-label="Diminuir">−</button><span>${line.quantity}</span><button class="qty-button" type="button" data-increase="${line.id}" aria-label="Aumentar">+</button></div>
+                    <input class="line-note" data-note="${line.id}" placeholder="Observação para a cozinha" value="${escapeHtml(line.note)}" aria-label="Observação para ${escapeHtml(line.name)}">
+                  </div>
+                </div>
+              `).join("")}</div>` : `<div class="cart-empty"><strong>Nada por aqui, ainda.</strong>Os itens adicionados aparecem nesta comanda.</div>`}
+              <div class="subtotal"><span>Subtotal</span><strong>${formatMoney(totalPrice)}</strong></div>
+              <button type="button" class="action-button" data-send ${draft.lines.length ? "" : "disabled"}>Enviar para a cozinha</button>
+              <p class="message" role="status">${escapeHtml(draft.message)}</p>
+            </aside>
+          </div>
+          <p class="help"><strong>Sincronização local:</strong> pedidos aparecem em outras abas deste mesmo navegador e endereço. Não sincroniza entre dispositivos.</p>
+        `;
+      }
+
+      function renderKitchen() {
+        const count = (status) => orders.filter((order) => order.status === status).length;
+        app.innerHTML = `
+          <p class="eyebrow">Operação · ao vivo</p>
+          <h1>Na cozinha<em>.</em></h1>
+          <p class="intro">Pedidos enviados pelo atendimento.</p>
+          <div class="stats">
+            <div class="stat"><span>Pendente</span><strong>${count("Pendente")}</strong></div>
+            <div class="stat"><span>Em preparo</span><strong>${count("Em preparo")}</strong></div>
+            <div class="stat"><span>Pronto</span><strong>${count("Pronto")}</strong></div>
+          </div>
+          <div class="kitchen-title"><h2>Comandas</h2><span>${orders.length} ${orders.length === 1 ? "pedido" : "pedidos"}</span></div>
+          ${orders.length ? `<div class="orders">${orders.map((order) => {
+            const statusClass = order.status === "Pendente" ? "" : order.status === "Em preparo" ? "preparing" : "ready";
+            const nextStatus = order.status === "Pendente" ? "Em preparo" : "Pronto";
+            const buttonLabel = order.status === "Pendente" ? "Iniciar preparo" : "Marcar como pronto";
+            return `
+              <article class="order-card ${statusClass}">
+                <div class="order-header">
+                  <strong class="table-name">Mesa ${escapeHtml(order.table)}</strong>
+                  <span class="status ${statusClass}">${escapeHtml(order.status)}</span>
+                  <time class="order-time">${formatTime(order.createdAt)}</time>
+                </div>
+                <ul class="order-lines">${order.lines.map((line) => `
+                  <li><strong>${line.quantity}×</strong> ${escapeHtml(line.name)}${line.note ? `<small>Obs.: ${escapeHtml(line.note)}</small>` : ""}</li>
+                `).join("")}</ul>
+                <div class="order-footer"><span>${order.lines.reduce((sum, line) => sum + line.quantity, 0)} itens</span>
+                  ${order.status === "Pronto" ? `<button class="action-button" type="button" disabled>Pronto</button>` : `<button class="action-button" type="button" data-advance="${order.id}" data-status="${nextStatus}">${buttonLabel}</button>`}
+                </div>
+              </article>
+            `;
+          }).join("")}</div>` : `<div class="empty-kitchen">Ainda não há pedidos. Envie um pela tela do garçom.</div>`}
+          <p class="help"><strong>Sincronização local:</strong> pedidos aparecem em outras abas deste mesmo navegador e endereço. Não sincroniza entre dispositivos.</p>
+        `;
+      }
+
+      function render() {
+        const kitchen = currentView() === "cozinha";
+        viewToggle.textContent = kitchen ? "Tela do garçom" : "Tela da cozinha";
+        kitchen ? renderKitchen() : renderWaiter();
+      }
+
+      // Um único listener delegado cuida dos botões das duas telas.
+      app.addEventListener("input", (event) => {
+        if (event.target.id === "table-input") draft.table = event.target.value;
+        const noteInput = event.target.closest("[data-note]");
+        if (noteInput) {
+          const line = draft.lines.find((item) => item.id === noteInput.dataset.note);
+          if (line) line.note = noteInput.value;
+        }
+      });
+      app.addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (!button) return;
+
+        if (button.dataset.table) {
+          draft.table = button.dataset.table;
+          draft.message = "";
+          render();
+        } else if (button.dataset.category) {
+          draft.category = button.dataset.category;
+          render();
+        } else if (button.dataset.add) {
+          const product = MENU.find((item) => item.id === button.dataset.add);
+          if (!product) return;
+          const existing = draft.lines.find((line) => line.itemId === product.id && !line.note);
+          if (existing) existing.quantity += 1;
+          else draft.lines.push({ id: `${product.id}-${Date.now()}`, itemId: product.id, name: product.name, quantity: 1, note: "" });
+          draft.message = "";
+          render();
+        } else if (button.dataset.increase || button.dataset.decrease) {
+          const id = button.dataset.increase || button.dataset.decrease;
+          const line = draft.lines.find((item) => item.id === id);
+          if (line) line.quantity += button.dataset.increase ? 1 : -1;
+          draft.lines = draft.lines.filter((item) => item.quantity > 0);
+          render();
+        } else if (button.dataset.remove) {
+          draft.lines = draft.lines.filter((line) => line.id !== button.dataset.remove);
+          render();
+        } else if (button.hasAttribute("data-send")) {
+          if (!draft.table.trim()) { draft.message = "Informe o número da mesa."; render(); return; }
+          if (!draft.lines.length) { draft.message = "Adicione pelo menos um item."; render(); return; }
+          const order = {
+            id: `pedido-${Date.now()}`,
+            table: draft.table.trim(),
+            createdAt: new Date().toISOString(),
+            status: "Pendente",
+            lines: draft.lines.map((line) => ({ ...line }))
+          };
+          draft.lines = [];
+          draft.table = "";
+          draft.message = `Pedido da mesa ${order.table} enviado para a cozinha.`;
+          saveOrders([order, ...orders]);
+        } else if (button.dataset.advance) {
+          const updated = orders.map((order) => order.id === button.dataset.advance
+            ? { ...order, status: button.dataset.status }
+            : order);
+          saveOrders(updated);
+        }
+      });
+
+      viewToggle.addEventListener("click", () => {
+        location.hash = currentView() === "cozinha" ? "#garcom" : "#cozinha";
+      });
+      window.addEventListener("hashchange", render);
+      render();
+    </script>
+  </body>
+</html>
